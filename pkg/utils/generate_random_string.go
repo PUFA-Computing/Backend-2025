@@ -1,6 +1,17 @@
 package utils
 
-import "math/rand"
+import (
+	cryptoRand "crypto/rand"
+	"fmt"
+	"log"
+	"math/rand"
+	"time"
+)
+
+func init() {
+	// Seed the math/rand package with the current time
+	rand.Seed(time.Now().UnixNano())
+}
 
 func GenerateRandomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -13,29 +24,56 @@ func GenerateRandomString(length int) string {
 
 const alphanumericCharset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-// GenerateRandomOTPCode GenerateRandomOTP generates a random 6-digit OTP
+// GenerateRandomOTPCode generates a random 6-digit OTP code
 func GenerateRandomOTPCode() string {
-	otp := make([]byte, 6) // 6 digits OTP
-	_, _ = rand.Read(otp)
-	for i := 0; i < len(otp); i++ {
-		otp[i] = otp[i]%10 + 48 // Convert to ASCII
-
-		// Ensure that the generated OTP is a 6-digit number
-		if otp[i] < 48 || otp[i] > 57 {
-			i--
+	// Use a more reliable method to generate numeric OTP
+	const digits = "0123456789"
+	const otpLength = 6
+	
+	// Create a buffer to hold the result
+	result := make([]byte, otpLength)
+	
+	// Fill the buffer with random digits
+	for i := 0; i < otpLength; i++ {
+		// Get a random byte
+		byte := make([]byte, 1)
+		_, err := cryptoRand.Read(byte)
+		if err != nil {
+			// Fallback to a simpler method if crypto/rand fails
+			result[i] = digits[rand.Intn(10)]
+			continue
 		}
+		
+		// Convert the random byte to a digit (0-9)
+		result[i] = digits[int(byte[0])%10]
 	}
-
-	return string(otp)
+	
+	// Convert to string and log for debugging
+	otpCode := string(result)
+	log.Printf("Generated OTP code: %s", otpCode)
+	
+	// Ensure we don't return an empty string
+	if otpCode == "" {
+		// Fallback to a simple timestamp-based code if all else fails
+		otpCode = fmt.Sprintf("%06d", time.Now().Unix()%1000000)
+		log.Printf("Used fallback OTP generation: %s", otpCode)
+	}
+	
+	return otpCode
 }
 
 // GenerateRandomTokenOtp is a secret that is used to generate a random OTP
 func GenerateRandomTokenOtp() string {
 	// Generate cryptographically secure random bytes
 	token := make([]byte, 32)
-	_, err := rand.Read(token)
+	_, err := cryptoRand.Read(token)
 	if err != nil {
-		return ""
+		// Log the error
+		log.Printf("Error generating random token: %v", err)
+		// Fallback to a less secure but functional alternative
+		for i := 0; i < 32; i++ {
+			token[i] = byte(rand.Intn(256))
+		}
 	}
 
 	// Filter out non-alphanumeric characters using a mask
