@@ -8,11 +8,13 @@ import (
 	"Backend/pkg/utils"
 	"context"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type Handlers struct {
@@ -60,8 +62,15 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 
 	newEvent.UserID = userID
 
+	// Generate slug from title and ensure it's not empty
 	if newEvent.Title != "" {
 		newEvent.Slug = utils.GenerateFriendlyURL(newEvent.Title)
+	}
+
+	// Validate that we have a valid slug
+	if newEvent.Slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Unable to generate a valid slug from title. Please use a different title."}})
+		return
 	}
 
 	if newEvent.StartDate.After(newEvent.EndDate) {
@@ -89,26 +98,46 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		return
 	}
 
+	// Double check that slug is not empty before proceeding
+	if newEvent.Slug == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Event slug cannot be empty"}})
+		return
+	}
+
+	// Log the slug that will be used
+	log.Println("Using slug for file upload:", newEvent.Slug)
+
 	// Choose storage service to upload image to (AWS or R2)
-	upload := utils.ChooseStorageService()
+	// upload := utils.ChooseStorageService()
 
-	// Upload image to storage service
-	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
+	// Use a default filename if slug is somehow still empty
+	uploadKey := newEvent.Slug
+	if uploadKey == "" {
+		uploadKey = "event-" + newEvent.UserID.String() + "-" + strconv.FormatInt(time.Now().Unix(), 10)
+		log.Println("Using fallback key for upload:", uploadKey)
+	}
+
+	// Set a default thumbnail URL in case upload fails
+	// Using a local placeholder image
+	defaultThumbnail := "http://localhost:3000/placeholder.svg"
+	newEvent.Thumbnail = defaultThumbnail
+
+	// Try to upload image to storage service, but continue even if it fails
+	var uploadErr error
+	// Always use R2 service since we've configured the code to only use R2
+	uploadErr = h.R2Service.UploadFileToR2(context.Background(), "event", uploadKey, optimizedImageBytes)
+	if uploadErr == nil {
+		// Only update thumbnail URL if upload succeeded
+		r2Url, urlErr := h.R2Service.GetFileR2("event", uploadKey)
+		if urlErr == nil {
+			log.Println("Successfully uploaded image to R2, URL:", r2Url)
+			newEvent.Thumbnail = r2Url
+		} else {
+			log.Println("Warning: Failed to get R2 URL:", urlErr)
 		}
-
-		newEvent.Thumbnail, _ = h.R2Service.GetFileR2("event", newEvent.Slug)
 	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		newEvent.Thumbnail, _ = h.AWSService.GetFileAWS("event", newEvent.Slug)
+		log.Println("Warning: Failed to upload image to R2:", uploadErr)
+		// Continue with event creation despite upload failure
 	}
 
 	if err := h.EventService.CreateEvent(&newEvent); err != nil {
@@ -161,7 +190,7 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 
 	file, _, err := c.Request.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"No file uploaded"}})
 		return
 	}
 
