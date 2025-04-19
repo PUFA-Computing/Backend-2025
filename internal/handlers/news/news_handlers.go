@@ -151,53 +151,70 @@ func (h *Handler) GetNewsBySlug(c *gin.Context) {
 }
 
 func (h *Handler) EditNews(c *gin.Context) {
+	log.Println("Starting EditNews handler")
 	_, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "news:edit")
 	if err != nil {
+		log.Println("Permission error:", err)
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
 	newsIDStr := c.Param("newsID")
+	log.Println("Editing news with ID:", newsIDStr)
 	newsID, err := strconv.Atoi(newsIDStr)
 	if err != nil {
+		log.Println("Invalid news ID:", newsIDStr)
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Invalid News ID"}})
 		return
 	}
 
 	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		log.Println("Error parsing multipart form:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
 	data := c.Request.FormValue("data")
+	log.Println("Received data:", data)
 	var updatedNews models.News
 	if err := json.Unmarshal([]byte(data), &updatedNews); err != nil {
+		log.Println("Error unmarshaling JSON data:", err)
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
+	log.Println("Unmarshaled news data:", updatedNews)
 
+	// Get existing news first to ensure we have the correct slug
+	log.Println("Fetching existing news with ID:", newsID)
+	existingNews, err := h.NewsService.GetNewsByID(newsID)
+	if err != nil {
+		log.Println("Error fetching existing news:", err)
+		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": []string{"News not found"}})
+		return
+	}
+	log.Println("Found existing news with slug:", existingNews.Slug)
+
+	// Set the slug from existing news to ensure consistency
+	updatedNews.Slug = existingNews.Slug
+	log.Println("Set updated news slug to:", updatedNews.Slug)
+
+	// Check if a file was uploaded
 	file, _, err := c.Request.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
+	if err == nil {
+		// File was uploaded, process it
+		optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
 
-	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
+		optimizedImageBytes, err := io.ReadAll(optimizedImage)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
 
-	optimizedImageBytes, err := io.ReadAll(optimizedImage)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	// Choose storage service to upload image to (AWS or R2)
-	upload := utils.ChooseStorageService()
-
-	if upload == utils.R2Service {
+		// Always use R2 for storage as per previous fix in event creation
 		err = h.R2Service.UploadFileToR2(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
@@ -206,32 +223,25 @@ func (h *Handler) EditNews(c *gin.Context) {
 
 		updatedNews.Thumbnail, _ = h.R2Service.GetFileR2("news", updatedNews.Slug)
 	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		updatedNews.Thumbnail, _ = h.AWSService.GetFileAWS("news", updatedNews.Slug)
+		// No file uploaded, keep the existing thumbnail
+		updatedNews.Thumbnail = existingNews.Thumbnail
 	}
 
-	existingNews, err := h.NewsService.GetNewsByID(newsID)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": []string{"News not found"}})
+	// We already got the existing news above, no need to fetch it again
+	// Keep the original slug regardless of title changes to maintain URL consistency
+	// and prevent breaking existing links
+
+	log.Println("Applying reflective update")
+	utils.ReflectiveUpdate(existingNews, &updatedNews)
+	log.Println("Updated news data after reflective update:", updatedNews)
+
+	log.Println("Calling NewsService.EditNews with ID:", newsID)
+	if err := h.NewsService.EditNews(newsID, &updatedNews); err != nil {
+		log.Println("Error updating news in database:", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
-
-	if updatedNews.Title == "" {
-		updatedNews.Slug = utils.GenerateFriendlyURL(updatedNews.Title)
-	} else {
-		updatedNews.Slug = existingNews.Slug
-	}
-
-	utils.ReflectiveUpdate(existingNews, &updatedNews)
-
-	if err := h.NewsService.EditNews(newsID, &updatedNews); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-	}
+	log.Println("Successfully updated news in database")
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Updated Successfully",
