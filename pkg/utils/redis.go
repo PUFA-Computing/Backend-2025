@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/redis/go-redis/v9"
 	"log"
-	"os"
+	// "os"
 	"time"
 )
 
@@ -14,37 +14,19 @@ var Rdb *redis.Client
 var RedisEnabled bool = false
 
 func InitRedis() {
-	redisURL := os.Getenv("REDIS_URL")
-	redisPassword := os.Getenv("REDIS_PASS")
-
-	log.Printf("Redis URL: %s", redisURL)
-
-	// Skip Redis initialization if URL is empty
-	if redisURL == "" {
-		log.Println("Redis URL not provided. Redis functionality will be disabled.")
-		RedisEnabled = false
-		return
-	}
-
+	// Use default local Redis connection
 	options := &redis.Options{
-		Addr:     redisURL,
-		Password: redisPassword,
-		DB:       0,
-		DialTimeout: 5 * time.Second,  // Add timeout
+		Addr: "localhost:6379", // Default Redis address
+		DB: 0,
+		DialTimeout: 5 * time.Second,
 	}
 
 	log.Println("Attempting to connect to Redis...")
 	Rdb = redis.NewClient(options)
 	
-	// Use a context with timeout for the ping
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	
+	ctx := context.Background()
 	if err := Rdb.Ping(ctx).Err(); err != nil {
-		log.Printf("WARNING: Failed to connect to Redis: %v", err)
-		log.Println("Application will continue without Redis. Token revocation will not work.")
-		RedisEnabled = false
-		return
+		log.Fatalf("Failed to connect to Redis: %v", err)
 	}
 	
 	RedisEnabled = true

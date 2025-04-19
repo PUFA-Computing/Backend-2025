@@ -11,7 +11,7 @@ import (
 
 func GenerateTOTPKey(email string) (*otp.Key, error) {
 	key, err := totp.Generate(totp.GenerateOpts{
-		Issuer:      "PUFA Computing",
+		Issuer:      "PUFA Computer Science",
 		AccountName: email,
 		Period:      30,
 		Digits:      otp.DigitsSix,

@@ -35,6 +35,30 @@ func SeedAspirations() error {
 			closed:         true,
 			adminReply:     strPtr("Thank you for the suggestion! We'll add this to our roadmap for future development."),
 		},
+		{
+			subject:        "Library Hours Extension",
+			message:        "Can we extend library hours during exam weeks? Many students need extra study time.",
+			anonymous:      false,
+			organizationID: 1,
+			closed:         true,
+			adminReply:     strPtr("We're working with the library administration to implement extended hours."),
+		},
+		{
+			subject:        "WiFi Improvement",
+			message:        "The WiFi connection in the computer lab is unstable. Can this be improved?",
+			anonymous:      true,
+			organizationID: 1,
+			closed:         false,
+			adminReply:     nil,
+		},
+		{
+			subject:        "Additional Programming Workshops",
+			message:        "Would it be possible to organize more programming workshops, especially for advanced topics?",
+			anonymous:      false,
+			organizationID: 1,
+			closed:         true,
+			adminReply:     strPtr("Great suggestion! We're planning to increase our workshop offerings next semester."),
+		},
 	}
 
 	// Get admin user ID (assuming there's at least one admin user)

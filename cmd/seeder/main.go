@@ -21,6 +21,14 @@ func main() {
 	// Initialize database
 	database.Init(config) // Remove error handling since Init() doesn't return anything
 
+	// If ur database is not empty, reset it first
+	// log.Println("Resetting database...")
+	// if err := seeder.ResetDatabase(); err != nil {
+	// 	log.Printf("Error resetting database: %v", err)
+	// 	return
+	// }
+	// log.Println("Database reset successfully")
+
 	// Run seeders
 	log.Println("Starting data seeding...")
 
