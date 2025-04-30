@@ -26,64 +26,47 @@ func CreateEvent(event *models.Event) error {
 
 // UpdateEvent updates an existing event record in the database with partial data
 func UpdateEvent(eventID int, updatedEvent *models.Event) error {
-	// Start building the query
-	query := "UPDATE events SET "
-	params := []interface{}{}
-	paramCount := 1
+	// Use a simpler approach with a direct update query
+	query := `UPDATE events SET 
+		title = $1, 
+		description = $2, 
+		start_date = $3, 
+		end_date = $4, 
+		status = $5, 
+		slug = $6, 
+		thumbnail = $7, 
+		organization_id = $8, 
+		max_registration = $9,
+		updated_at = $10
+		WHERE id = $11`
 
-	// Check each field in updatedEvent. If it's not the zero value for its type, add it to the query.
-	if updatedEvent.Title != "" {
-		query += "title = $" + strconv.Itoa(paramCount) + ", "
-		params = append(params, updatedEvent.Title)
-		paramCount++
-	}
-	if updatedEvent.Description != "" {
-		query += "description = $" + strconv.Itoa(paramCount) + ", "
-		params = append(params, updatedEvent.Description)
-		paramCount++
-	}
-	if !updatedEvent.StartDate.IsZero() {
-		query += "start_date = $" + strconv.Itoa(paramCount) + ", "
-		params = append(params, updatedEvent.StartDate)
-		paramCount++
-	}
-	if !updatedEvent.EndDate.IsZero() {
-		query += "end_date = $" + strconv.Itoa(paramCount) + ", "
-		params = append(params, updatedEvent.EndDate)
-		paramCount++
-	}
-	if updatedEvent.Status != "" {
-		query += "status = $" + strconv.Itoa(paramCount) + ", "
-		params = append(params, updatedEvent.Status)
-		paramCount++
-	}
-	if updatedEvent.Slug != "" {
-		query += "slug = $" + strconv.Itoa(paramCount) + ", "
-		params = append(params, updatedEvent.Slug)
-		paramCount++
-	}
-	if updatedEvent.Thumbnail != "" {
-		query += "thumbnail = $" + strconv.Itoa(paramCount) + ", "
-		params = append(params, updatedEvent.Thumbnail)
-		paramCount++
-	}
-	if updatedEvent.OrganizationID != 0 {
-		query += "organization_id = $" + strconv.Itoa(paramCount) + ", "
-		params = append(params, updatedEvent.OrganizationID)
-		paramCount++
-	}
-	if updatedEvent.MaxRegistration != nil {
-		query += "max_registration = $" + strconv.Itoa(paramCount) + ", "
-		params = append(params, updatedEvent.MaxRegistration)
-		paramCount++
+	// Log the query and parameters for debugging
+	fmt.Printf("Updating event %d with data: %+v\n", eventID, updatedEvent)
+
+	// Execute the update query
+	_, err := database.DB.Exec(
+		context.Background(),
+		query,
+		updatedEvent.Title,
+		updatedEvent.Description,
+		updatedEvent.StartDate,
+		updatedEvent.EndDate,
+		updatedEvent.Status,
+		updatedEvent.Slug,
+		updatedEvent.Thumbnail,
+		updatedEvent.OrganizationID,
+		updatedEvent.MaxRegistration,
+		time.Now(), // updated_at
+		eventID,
+	)
+
+	if err != nil {
+		fmt.Printf("Error updating event: %v\n", err)
+		return err
 	}
 
-	// Remove the trailing comma and space, then add the WHERE clause
-	query = query[:len(query)-2] + " WHERE id = $" + strconv.Itoa(paramCount)
-	params = append(params, eventID)
-
-	_, err := database.DB.Exec(context.Background(), query, params...)
-	return err
+	fmt.Printf("Successfully updated event %d\n", eventID)
+	return nil
 }
 
 // DeleteEvent deletes an event record from the database and delete all event registrations associated with the event

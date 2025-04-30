@@ -126,7 +126,7 @@ func (ms *MailgunService) SendOTPEmail(to, otpCode string) error {
 						<tbody><tr>
 							<td align="right" valign="middle" style="padding-top: 20px; padding-right: 0px;" class="webview">
 								<!-- Email View in Browser // -->
-								<a class="text hideOnMobile" href="https://computing.president.ac.id" target="_blank" style="color:#777777; font-family:'Open Sans', Helvetica, Arial, sans-serif; font-size:12px; font-weight:400; font-style:normal; letter-spacing:normal; line-height:20px; text-transform:none; text-align:right; text-decoration:underline; padding:0; margin:0">
+								<a class="text hideOnMobile" href="https://compsci.president.ac.id" target="_blank" style="color:#777777; font-family:'Open Sans', Helvetica, Arial, sans-serif; font-size:12px; font-weight:400; font-style:normal; letter-spacing:normal; line-height:20px; text-transform:none; text-align:right; text-decoration:underline; padding:0; margin:0">
 									Oh wait, there's more! →
 								</a>
 							</td>

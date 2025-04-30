@@ -22,7 +22,7 @@ func SetupRoutes() *gin.Engine {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://computing.president.ac.id", "https://staging.computing.president.ac.id", "http://localhost:3000"},
+		AllowOrigins:     []string{"https://computing.president.ac.id", "https://staging.computing.president.ac.id", "https://compsci.president.ac.id", "http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"},
 		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
