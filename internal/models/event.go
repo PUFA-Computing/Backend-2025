@@ -22,7 +22,6 @@ type Event struct {
 	Organization    string    `json:"organization"`
 	Author          string    `json:"author"`
 	TotalRegistered int       `json:"total_registered"`
-	RegisteredCount int       `json:"registered_count"`
 }
 
 type EventRegistration struct {

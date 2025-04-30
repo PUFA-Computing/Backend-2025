@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"strconv"
-	"time"
 )
 
 func CreateNews(news *models.News) error {
@@ -18,12 +17,9 @@ func CreateNews(news *models.News) error {
 }
 
 func UpdateNews(newsID int, news *models.News) error {
-	// Set updated_at to current time
-	news.UpdatedAt = time.Now()
-
 	_, err := database.DB.Exec(context.Background(), `
 		UPDATE news SET title = $1, content = $2, publish_date = $3, updated_at = $4, thumbnail = $5, slug = $6, organization_id = $7
-		WHERE id = $8`, news.Title, news.Content, news.PublishDate, news.UpdatedAt, news.Thumbnail, news.Slug, news.OrganizationID, newsID)
+		WHERE id = $5`, news.Title, news.Content, news.PublishDate, news.UpdatedAt, news.Thumbnail, news.Slug, news.OrganizationID, newsID)
 	return err
 }
 

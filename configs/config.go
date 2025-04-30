@@ -23,18 +23,17 @@ type Config struct {
 	CloudflareR2AccessKey string
 
 	S3Endpoint         string
-	S3UsePathStyle     bool
 	AWSAccessKeyId     string
 	AWSSecretAccessKey string
 	AWSRegion          string
+	S3UsePathStyle     bool
 	S3Bucket           string
 
-	SMTPHost      string
-	SMTPPort      string
-	SMTPUsername  string
-	SMTPPassword  string
-	SenderEmail   string
-	SMTPSenderEmail string
+	SMTPHost     string
+	SMTPPort     string
+	SMTPUsername string
+	SMTPPassword string
+	SenderEmail  string
 
 	GithubAccessToken string
 	HunterApiKey      string
@@ -66,9 +65,9 @@ func LoadConfig() *Config {
 		JWTSecretKey:          os.Getenv("JWT_SECRET_KEY"),
 		CloudflareAccountId:   os.Getenv("CLOUDFLARE_ACCOUNT_ID"),
 		CloudflareR2AccessId:  os.Getenv("CLOUDFLARE_R2_ACCESS_ID"),
-		S3Endpoint:            os.Getenv("S3_ENDPOINT"),
- 		S3UsePathStyle:        os.Getenv("S3_USE_PATH_STYLE") == "true",
 		CloudflareR2AccessKey: os.Getenv("CLOUDFLARE_R2_ACCESS_KEY"),
+		S3Endpoint:            os.Getenv("S3_ENDPOINT"),
+		S3UsePathStyle:        os.Getenv("S3_USE_PATH_STYLE") == "true",
 		AWSAccessKeyId:        os.Getenv("AWS_ACCESS_KEY_ID"),
 		AWSSecretAccessKey:    os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		AWSRegion:             os.Getenv("AWS_REGION"),
@@ -78,7 +77,6 @@ func LoadConfig() *Config {
 		SMTPUsername:          os.Getenv("SMTP_USERNAME"),
 		SMTPPassword:          os.Getenv("SMTP_PASSWORD"),
 		SenderEmail:           os.Getenv("SENDER_EMAIL"),
-		SMTPSenderEmail:       os.Getenv("SMTP_SENDER_EMAIL"),
 		BaseURL:               baseURl,
 		GithubAccessToken:     os.Getenv("GH_ACCESS_TOKEN"),
 		HunterApiKey:          os.Getenv("HUNTER_API_KEY"),

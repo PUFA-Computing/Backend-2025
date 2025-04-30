@@ -48,34 +48,44 @@ func SetupRoutes() *gin.Engine {
 	// Get SMTP settings from config
 	config := configs.LoadConfig()
 	
+	// Use config values if available, otherwise use fallback values for development
 	smtpHost := config.SMTPHost
 	if smtpHost == "" {
-		log.Println("Warning: SMTP_HOST not set in environment")
+		smtpHost = "smtp.gmail.com"
+		log.Println("Using fallback SMTP host: smtp.gmail.com")
 	}
 	
 	smtpPort := config.SMTPPort
 	if smtpPort == "" {
-		log.Println("Warning: SMTP_PORT not set in environment")
+		smtpPort = "587"
+		log.Println("Using fallback SMTP port: 587")
 	}
 	
 	smtpUsername := config.SMTPUsername
 	if smtpUsername == "" {
-		log.Println("Warning: SMTP_USERNAME not set in environment")
+		// NOTE: Replace with your actual Gmail address for testing
+		smtpUsername = "aldiapriansyah790@gmail.com"
+		log.Println("Using fallback SMTP username - REPLACE WITH YOUR OWN FOR TESTING")
 	}
 	
 	smtpPassword := config.SMTPPassword
 	if smtpPassword == "" {
-		log.Println("Warning: SMTP_PASSWORD not set in environment") 
+		// NOTE: Replace with your actual Gmail app password for testing
+		// This is just a placeholder and won't work
+		smtpPassword = "xshypkoitnhmxjdm"
+		log.Println("Using fallback SMTP password - REPLACE WITH YOUR OWN FOR TESTING")
 	}
 	
-	senderEmail := config.SMTPSenderEmail
+	senderEmail := config.SenderEmail
 	if senderEmail == "" {
-		log.Println("Warning: SMTP_SENDER_EMAIL not set in environment")
+		// NOTE: Replace with your actual sender email for testing
+		senderEmail = "rnt.compsci@gmail.com"
+		log.Println("Using fallback sender email - REPLACE WITH YOUR OWN FOR TESTING")
 	}
-
+	
 	EmailService := services.NewTestMailService(
 		smtpHost,
-		smtpPort, 
+		smtpPort,
 		smtpUsername,
 		smtpPassword,
 		senderEmail,

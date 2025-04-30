@@ -53,7 +53,7 @@ func AuthenticateUser(usernameOrEmail string) (*models.User, error) {
 
 	if errors.Is(err, sql.ErrNoRows) {
 		log.Println("No user found with username or email:", usernameOrEmail)
-		return nil, nil // Return nil, nil instead of nil, err to indicate user not found without error
+		return nil, err
 	} else if err != nil {
 		log.Println("Error during query execution or scanning:", err)
 		return nil, err
@@ -181,7 +181,7 @@ func VerifyEmail(token string) error {
 }
 
 func GetPasswordResetToken(userID uuid.UUID) (string, error) {
-	var token sql.NullString
+	var token string
 	query := `
 		SELECT password_reset_token
 		FROM users
@@ -195,13 +195,7 @@ func GetPasswordResetToken(userID uuid.UUID) (string, error) {
 		log.Printf("Error during query execution or scanning: %v", err)
 		return "", err
 	}
-	
-	// Return empty string if token is NULL
-	if !token.Valid {
-		return "", nil
-	}
-	
-	return token.String, nil
+	return token, nil
 }
 
 func UpdatePassword(userID uuid.UUID, newPassword string) error {

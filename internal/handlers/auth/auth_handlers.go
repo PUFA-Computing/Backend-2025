@@ -384,48 +384,33 @@ func (h *Handlers) RequestPasswordReset(c *gin.Context) {
 		Email string `json:"email"`
 	}
 
-	// First bind the JSON to get the email
 	if err := c.BindJSON(&request); err != nil {
-		log.Printf("[ERROR] Failed to bind JSON in password reset request: %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	// Clean the email to remove any trailing quotes or whitespace
-	email := strings.TrimSpace(request.Email)
-	email = strings.Trim(email, "\"'")
-	log.Printf("[DEBUG] Processing password reset request for email: %s", email)
-
-	// Look up the user with the cleaned email
-	user, err := h.AuthService.GetUserByUsernameOrEmail(email)
+	user, err := h.AuthService.GetUserByUsernameOrEmail(request.Email)
 	if err != nil {
-		log.Printf("[ERROR] Error looking up user by email: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
 	if user == nil {
-		log.Printf("[ERROR] User not found for email: %s", request.Email)
 		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"User not found"}})
 		return
 	}
 
-	log.Printf("[DEBUG] User found, ID: %s, generating OTP code", user.ID)
 	otpCode, err := h.AuthService.RequestForgotPassword(user.ID)
 	if err != nil {
-		log.Printf("[ERROR] Failed to generate OTP code: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	log.Printf("[DEBUG] OTP code generated, sending email to: %s", user.Email)
 	if err := h.EmailService.SendOTPEmail(user.Email, otpCode); err != nil {
-		log.Printf("[ERROR] Failed to send OTP email: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
-	log.Printf("[DEBUG] Password reset email sent successfully to: %s", user.Email)
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Password Reset Email Sent"})
 }
 
