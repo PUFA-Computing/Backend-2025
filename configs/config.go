@@ -76,7 +76,7 @@ func LoadConfig() *Config {
 		SMTPPort:              os.Getenv("SMTP_PORT"),
 		SMTPUsername:          os.Getenv("SMTP_USERNAME"),
 		SMTPPassword:          os.Getenv("SMTP_PASSWORD"),
-		SenderEmail:           os.Getenv("SENDER_EMAIL"),
+		SenderEmail:           os.Getenv("SMTP_SENDER_EMAIL"),
 		BaseURL:               baseURl,
 		GithubAccessToken:     os.Getenv("GH_ACCESS_TOKEN"),
 		HunterApiKey:          os.Getenv("HUNTER_API_KEY"),
