@@ -10,3 +10,20 @@ services:
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      REDIS_URL: ${REDIS_URL}
+      REDIS_PASS: ${REDIS_PASS:-}
+    depends_on:
+      - redis
+    restart: always
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+    command: redis-server --appendonly yes
+
+volumes:
+  redis_data:

@@ -64,7 +64,7 @@ func SetupRoutes() *gin.Engine {
 	smtpUsername := config.SMTPUsername
 	if smtpUsername == "" {
 		// NOTE: Replace with your actual Gmail address for testing
-		smtpUsername = "aldiapriansyah790@gmail.com"
+		smtpUsername = config.SMTPUsername
 		log.Println("Using fallback SMTP username - REPLACE WITH YOUR OWN FOR TESTING")
 	}
 	
@@ -72,14 +72,14 @@ func SetupRoutes() *gin.Engine {
 	if smtpPassword == "" {
 		// NOTE: Replace with your actual Gmail app password for testing
 		// This is just a placeholder and won't work
-		smtpPassword = "xshypkoitnhmxjdm"
+		smtpPassword = config.SMTPPassword
 		log.Println("Using fallback SMTP password - REPLACE WITH YOUR OWN FOR TESTING")
 	}
 	
 	senderEmail := config.SenderEmail
 	if senderEmail == "" {
 		// NOTE: Replace with your actual sender email for testing
-		senderEmail = "rnt.compsci@gmail.com"
+		senderEmail = config.SenderEmail
 		log.Println("Using fallback sender email - REPLACE WITH YOUR OWN FOR TESTING")
 	}
 	
