@@ -54,12 +54,11 @@ func LoadConfig() *Config {
 	env := os.Getenv("ENV")
 
 	var baseURl string
-	if env == "production" {
-		baseURl = "https://compsci.president.ac.id"
-	} else if env == "development" {
-		baseURl = "https://compsci.president.ac.id"
-	} else {
+	if env == "local" || env == "test" {
 		baseURl = "http://localhost:3000"
+	} else {
+		// Default to production URL if ENV is not explicitly set to local/test
+		baseURl = "https://compsci.president.ac.id"
 	}
 
 	cfg := &Config{
@@ -82,13 +81,13 @@ func LoadConfig() *Config {
 		AWSRegion:             os.Getenv("AWS_REGION"),
 		S3Bucket:              os.Getenv("S3_BUCKET"),
 		// Email service toggle
-		UseSmtp:               os.Getenv("USE_SMTP") == "true",
+		UseSmtp: 			   os.Getenv("USE_SMTP") == "true",
 		// Legacy SMTP settings
-		SMTPHost:              os.Getenv("SMTP_HOST"),
-		SMTPPort:              os.Getenv("SMTP_PORT"),
-		SMTPUsername:          os.Getenv("SMTP_USERNAME"),
-		SMTPPassword:          os.Getenv("SMTP_PASSWORD"),
-		SenderEmail:           os.Getenv("SMTP_SENDER_EMAIL"),
+		SMTPHost:      		   os.Getenv("SMTP_HOST"),
+		SMTPPort:      		   os.Getenv("SMTP_PORT"),
+		SMTPUsername:  		   os.Getenv("SMTP_USERNAME"),
+		SMTPPassword:  		   os.Getenv("SMTP_PASSWORD"),
+		SenderEmail:   		   os.Getenv("SMTP_SENDER_EMAIL"),
 		// SendGrid settings
 		SendGridAPIKey:        os.Getenv("SENDGRID_API_KEY"),
 		SendGridSender:        os.Getenv("SENDGRID_SENDER_EMAIL"),
