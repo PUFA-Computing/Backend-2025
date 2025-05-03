@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -175,6 +176,15 @@ func (s *S3Service) GetFileR2(directory, slug string) (string, error) {
 	key := directory + "/" + slug + ".jpg"
 	
 	// For Cloudflare R2 with custom domain
+	// Add debugging to see what URL is being generated
+	fmt.Printf("Generating R2 URL for key: %s\n", key)
+	
+	// Add a timestamp to prevent browser caching
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+	
 	// Use the public URL format that works with your Cloudflare R2 setup
-	return fmt.Sprintf("https://pufacompsci.my.id/%s", key), nil
+	// Add a cache-busting parameter to force browser to reload the image
+	url := fmt.Sprintf("https://pufacompsci.my.id/%s?t=%d", key, timestamp)
+	fmt.Printf("Generated URL with cache-busting: %s\n", url)
+	return url, nil
 }

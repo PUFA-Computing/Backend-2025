@@ -19,7 +19,13 @@ import (
 )
 
 func SetupRoutes() *gin.Engine {
-	r := gin.Default()
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(gin.Logger())
+	
+	// Set maximum multipart memory limit to 10MB
+	r.MaxMultipartMemory = 10 << 20 // 10 MB
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"https://computing.president.ac.id", "https://staging.computing.president.ac.id", "https://compsci.president.ac.id", "http://localhost:3000"},
