@@ -1,8 +1,6 @@
 package utils
 
-import (
-	"crypto/rand"
-)
+// No imports needed
 
 type StorageService int
 
@@ -11,18 +9,8 @@ const (
 	R2Service
 )
 
-// ChooseStorageService randomly selects a storage service based on a 75% chance of R2Service and 25% chance of AWSService
+// ChooseStorageService always returns R2Service as we no longer use AWS S3
 func ChooseStorageService() StorageService {
-	// Generate a random number between 0 and 3
-	randomBytes := make([]byte, 1)
-	_, err := rand.Read(randomBytes)
-	if err != nil {
-		panic(err)
-	}
-	randomNumber := randomBytes[0] % 4
-
-	if randomNumber == 0 {
-		return AWSService
-	}
+	// Always use R2 service
 	return R2Service
 }

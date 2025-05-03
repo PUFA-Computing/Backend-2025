@@ -366,27 +366,14 @@ func (h *Handlers) UploadProfilePicture(c *gin.Context) {
 		return
 	}
 
-	// Choose storage service to upload image to (AWS or R2)
-	upload := utils.ChooseStorageService()
-
-	// Upload image to storage service
-	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), "users", user.ID.String(), optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		user.ProfilePicture, _ = h.R2Service.GetFileR2("users", userID.String())
-	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "users", user.ID.String(), optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		user.ProfilePicture, _ = h.AWSService.GetFileAWS("users", user.ID.String())
+	// Upload image to R2 storage
+	err = h.R2Service.UploadFileToR2(context.Background(), "users", user.ID.String(), optimizedImageBytes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
+
+	user.ProfilePicture, _ = h.R2Service.GetFileR2("users", userID.String())
 
 	// Update user profile picture
 	if err := h.UserService.UploadProfilePicture(userID, user.ProfilePicture); err != nil {
@@ -433,29 +420,15 @@ func (h *Handlers) UploadStudentID(c *gin.Context) {
 		return
 	}
 
-	// Choose storage service to upload image to (AWS or R2)
-	upload := utils.ChooseStorageService()
-
-	// Upload image to storage service
-	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), "users", "student_id_"+userID.String(), optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		imageUrl, _ := h.R2Service.GetFileR2("users", "student_id_"+userID.String())
-		user.StudentIDVerification = &imageUrl
-	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "users", "student_id_"+userID.String(), optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		imageUrl, _ := h.AWSService.GetFileAWS("users", "student_id_"+userID.String())
-		user.StudentIDVerification = &imageUrl
+	// Upload image to R2 storage
+	err = h.R2Service.UploadFileToR2(context.Background(), "users", "student_id_"+userID.String(), optimizedImageBytes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
+
+	imageUrl, _ := h.R2Service.GetFileR2("users", "student_id_"+userID.String())
+	user.StudentIDVerification = &imageUrl
 
 	// Update user profile picture
 	if err := h.UserService.UploadStudentID(userID, *user.StudentIDVerification); err != nil {

@@ -79,26 +79,14 @@ func (h *Handler) CreateNews(c *gin.Context) {
 		return
 	}
 
-	// Choose storage service to upload image to (AWS or R2)
-	upload := utils.ChooseStorageService()
-
-	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), "news", newNews.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		newNews.Thumbnail, _ = h.R2Service.GetFileR2("news", newNews.Slug)
-	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "news", newNews.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		newNews.Thumbnail, _ = h.AWSService.GetFileAWS("news", newNews.Slug)
+	// Upload image to R2 storage
+	err = h.R2Service.UploadFileToR2(context.Background(), "news", newNews.Slug, optimizedImageBytes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
+
+	newNews.Thumbnail, _ = h.R2Service.GetFileR2("news", newNews.Slug)
 
 	if err := h.NewsService.CreateNews(&newNews); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
@@ -194,26 +182,14 @@ func (h *Handler) EditNews(c *gin.Context) {
 		return
 	}
 
-	// Choose storage service to upload image to (AWS or R2)
-	upload := utils.ChooseStorageService()
-
-	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		updatedNews.Thumbnail, _ = h.R2Service.GetFileR2("news", updatedNews.Slug)
-	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		updatedNews.Thumbnail, _ = h.AWSService.GetFileAWS("news", updatedNews.Slug)
+	// Upload image to R2 storage
+	err = h.R2Service.UploadFileToR2(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
+
+	updatedNews.Thumbnail, _ = h.R2Service.GetFileR2("news", updatedNews.Slug)
 
 	existingNews, err := h.NewsService.GetNewsByID(newsID)
 	if err != nil {

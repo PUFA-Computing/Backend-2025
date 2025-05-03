@@ -89,27 +89,14 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	// Choose storage service to upload image to (AWS or R2)
-	upload := utils.ChooseStorageService()
-
-	// Upload image to storage service
-	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		newEvent.Thumbnail, _ = h.R2Service.GetFileR2("event", newEvent.Slug)
-	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		newEvent.Thumbnail, _ = h.AWSService.GetFileAWS("event", newEvent.Slug)
+	// Upload image to R2 storage
+	err = h.R2Service.UploadFileToR2(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
+
+	newEvent.Thumbnail, _ = h.R2Service.GetFileR2("event", newEvent.Slug)
 
 	if err := h.EventService.CreateEvent(&newEvent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
