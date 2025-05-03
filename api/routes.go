@@ -45,51 +45,77 @@ func SetupRoutes() *gin.Engine {
 	aspirationsService := services.NewAspirationService()
 	AWSService, _ := services.NewAWSService()
 	R2Service, _ := services.NewR2Service()
-	// Get SMTP settings from config
+	// Get email service configuration
 	config := configs.LoadConfig()
 	
-	// Use config values if available, otherwise use fallback values for development
-	smtpHost := config.SMTPHost
-	if smtpHost == "" {
-		smtpHost = "smtp.gmail.com"
-		log.Println("Using fallback SMTP host: smtp.gmail.com")
-	}
+	// Initialize email service based on configuration
+	var EmailService services.EmailService
 	
-	smtpPort := config.SMTPPort
-	if smtpPort == "" {
-		smtpPort = "587"
-		log.Println("Using fallback SMTP port: 587")
+	// Check if we should use SMTP or SendGrid
+	if config.UseSmtp {
+		// Use SMTP service
+		smtpHost := config.SMTPHost
+		if smtpHost == "" {
+			smtpHost = "smtp.gmail.com"
+			log.Println("Using fallback SMTP host: smtp.gmail.com")
+		}
+		
+		smtpPort := config.SMTPPort
+		if smtpPort == "" {
+			smtpPort = "587"
+			log.Println("Using fallback SMTP port: 587")
+		}
+		
+		smtpUsername := config.SMTPUsername
+		if smtpUsername == "" {
+			log.Println("WARNING: SMTP username not found in environment variables")
+		}
+		
+		smtpPassword := config.SMTPPassword
+		if smtpPassword == "" {
+			log.Println("WARNING: SMTP password not found in environment variables")
+		}
+		
+		senderEmail := config.SenderEmail
+		if senderEmail == "" {
+			log.Println("WARNING: SMTP sender email not found in environment variables")
+		}
+		
+		EmailService = services.NewTestMailService(
+			smtpHost,
+			smtpPort,
+			smtpUsername,
+			smtpPassword,
+			senderEmail,
+		)
+		log.Println("Using SMTP email service")
+	} else {
+		// Use SendGrid service
+		sendGridAPIKey := config.SendGridAPIKey
+		if sendGridAPIKey == "" {
+			log.Println("WARNING: SendGrid API key not found in environment variables")
+		}
+		
+		sendGridSender := config.SendGridSender
+		if sendGridSender == "" {
+			// Fallback to legacy sender email if available
+			sendGridSender = config.SenderEmail
+			log.Println("Using legacy sender email for SendGrid")
+		}
+		
+		sendGridSenderName := config.SendGridSenderName
+		if sendGridSenderName == "" {
+			sendGridSenderName = "PUFA Computer Science"
+			log.Println("Using default sender name: PUFA Computer Science")
+		}
+		
+		EmailService = services.NewSendGridService(
+			sendGridAPIKey,
+			sendGridSender,
+			sendGridSenderName,
+		)
+		log.Println("Using SendGrid email service")
 	}
-	
-	smtpUsername := config.SMTPUsername
-	if smtpUsername == "" {
-		// NOTE: Replace with your actual Gmail address for testing
-		smtpUsername = config.SMTPUsername
-		log.Println("Using fallback SMTP username - REPLACE WITH YOUR OWN FOR TESTING")
-	}
-	
-	smtpPassword := config.SMTPPassword
-	if smtpPassword == "" {
-		// NOTE: Replace with your actual Gmail app password for testing
-		// This is just a placeholder and won't work
-		smtpPassword = config.SMTPPassword
-		log.Println("Using fallback SMTP password - REPLACE WITH YOUR OWN FOR TESTING")
-	}
-	
-	senderEmail := config.SenderEmail
-	if senderEmail == "" {
-		// NOTE: Replace with your actual sender email for testing
-		senderEmail = config.SenderEmail
-		log.Println("Using fallback sender email - REPLACE WITH YOUR OWN FOR TESTING")
-	}
-	
-	EmailService := services.NewTestMailService(
-		smtpHost,
-		smtpPort,
-		smtpUsername,
-		smtpPassword,
-		senderEmail,
-	)
 	VersionService := services.NewVersionService(configs.LoadConfig().GithubAccessToken)
 
 	eventStatusUpdater := services.NewEventStatusUpdater(eventService)
