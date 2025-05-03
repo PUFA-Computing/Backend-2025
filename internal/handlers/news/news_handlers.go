@@ -207,6 +207,7 @@ func (h *Handler) EditNews(c *gin.Context) {
 
 	if err := h.NewsService.EditNews(newsID, &updatedNews); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
