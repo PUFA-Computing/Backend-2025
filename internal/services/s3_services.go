@@ -175,5 +175,6 @@ func (s *S3Service) GetFileR2(directory, slug string) (string, error) {
 	key := directory + "/" + slug + ".jpg"
 	
 	// For Cloudflare R2 with custom domain
+	// Use the public URL format that works with your Cloudflare R2 setup
 	return fmt.Sprintf("https://pufacompsci.my.id/%s", key), nil
 }
