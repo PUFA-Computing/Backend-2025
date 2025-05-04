@@ -13,5 +13,4 @@ VALUES
     ('PUFA Computing'),
     ('PUMA IT'),
     ('PUMA IS'),
-    ('PUMA VCD'),
-    ('PUMA ID');
+    ('guest');

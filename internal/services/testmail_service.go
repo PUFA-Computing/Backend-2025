@@ -183,7 +183,7 @@ func generateOTPEmailHTML(otpCode string) string {
     </div>
     <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
         <p> 2025 PUFA Computing. All rights reserved.</p>
-        <p><a href="https://computing.president.ac.id" style="color: #003CE5; text-decoration: none;">computing.president.ac.id</a></p>
+        <p><a href="https://compsci.president.ac.id" style="color: #003CE5; text-decoration: none;">compsci.president.ac.id</a></p>
     </div>
 </body>
 </html>
@@ -213,7 +213,7 @@ func generateVerificationEmailHTML(verificationLink string) string {
     </div>
     <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
         <p> 2025 PUFA Computing. All rights reserved.</p>
-        <p><a href="https://computing.president.ac.id" style="color: #003CE5; text-decoration: none;">computing.president.ac.id</a></p>
+        <p><a href="https://compsci.president.ac.id" style="color: #003CE5; text-decoration: none;">compsci.president.ac.id</a></p>
     </div>
 </body>
 </html>

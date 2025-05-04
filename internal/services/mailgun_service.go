@@ -126,7 +126,7 @@ func (ms *MailgunService) SendOTPEmail(to, otpCode string) error {
 						<tbody><tr>
 							<td align="right" valign="middle" style="padding-top: 20px; padding-right: 0px;" class="webview">
 								<!-- Email View in Browser // -->
-								<a class="text hideOnMobile" href="https://computing.president.ac.id" target="_blank" style="color:#777777; font-family:'Open Sans', Helvetica, Arial, sans-serif; font-size:12px; font-weight:400; font-style:normal; letter-spacing:normal; line-height:20px; text-transform:none; text-align:right; text-decoration:underline; padding:0; margin:0">
+								<a class="text hideOnMobile" href="https://compsci.president.ac.id" target="_blank" style="color:#777777; font-family:'Open Sans', Helvetica, Arial, sans-serif; font-size:12px; font-weight:400; font-style:normal; letter-spacing:normal; line-height:20px; text-transform:none; text-align:right; text-decoration:underline; padding:0; margin:0">
 									Oh wait, there's more! →
 								</a>
 							</td>
@@ -147,7 +147,7 @@ func (ms *MailgunService) SendOTPEmail(to, otpCode string) error {
 						<tbody><tr>
 							<td align="center" valign="middle" style="padding-top: 40px; padding-bottom: 40px;" class="emailLogo">
 								<!-- Logo and Link // -->
-								<a href="https://computing.president.ac.id" target="_blank" style="text-decoration:none;" class="">
+								<a href="https://compsci.president.ac.id" target="_blank" style="text-decoration:none;" class="">
 									<img src="https://sg.pufacomputing.live/Logo%20Puma.png" alt="" width="150" border="0" style="width:100%; max-width:150px;height:auto; display:block;" class="">
 								</a>
 							</td>
@@ -176,7 +176,7 @@ func (ms *MailgunService) SendOTPEmail(to, otpCode string) error {
 						<tr>
 							<td align="center" valign="top" style="padding-bottom: 20px;" class="imgHero">
 								<!-- Hero Image // -->
-								<a href="https://computing.president.ac.id" target="_blank" style="text-decoration:none;">
+								<a href="https://compsci.president.ac.id" target="_blank" style="text-decoration:none;">
 									<img src="http://grapestheme.com/notify/img/hero-img/blue/heroFill/user-code.png" width="600" alt="" border="0" style="width:100%; max-width:600px; height:auto; display:block;">
 								</a>
 							</td>
@@ -453,7 +453,7 @@ func (ms *MailgunService) SendVerificationEmail(to, token string, userId uuid.UU
 						<tbody><tr>
 							<td align="right" valign="middle" style="padding-top: 20px; padding-right: 0px;" class="webview">
 								<!-- Email View in Browser // -->
-								<a class="text hideOnMobile" href="https://computing.president.ac.id" target="_blank" style="color: rgb(119, 119, 119); font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 400; font-style: normal; letter-spacing: normal; line-height: 20px; text-transform: none; text-align: right; text-decoration: underline; padding: 0px; margin: 0px; display: none;">
+								<a class="text hideOnMobile" href="https://compsci.president.ac.id" target="_blank" style="color: rgb(119, 119, 119); font-family: 'Open Sans', Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 400; font-style: normal; letter-spacing: normal; line-height: 20px; text-transform: none; text-align: right; text-decoration: underline; padding: 0px; margin: 0px; display: none;">
 									Oh wait, there's more! →
 								</a>
 							</td>

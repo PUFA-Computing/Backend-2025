@@ -40,4 +40,5 @@ VALUES
     ('aspirations:close', 'Close Aspirations'),
     ('aspirations:reply', 'Reply Aspirations'),
     ('aspirations:delete', 'Delete Aspirations'),
-    ('aspirations:upvote', 'Upvote Aspirations');
+    ('aspirations:upvote', 'Upvote Aspirations'),
+    ('users:2fa', '2FA Feature');
