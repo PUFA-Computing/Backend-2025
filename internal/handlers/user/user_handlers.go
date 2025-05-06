@@ -140,7 +140,7 @@ func (h *Handlers) EditUser(c *gin.Context) {
 			return
 		}
 		if updatedUser.StudentID[:3] != "001" && updatedUser.StudentID[:3] != "012" && updatedUser.StudentID[:3] != "013" && updatedUser.StudentID[:3] != "025" {
-			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"You are not a student of faculty of computing"}})
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"You are not a student of faculty of computer science"}})
 			return
 		}
 

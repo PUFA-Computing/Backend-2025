@@ -46,7 +46,7 @@ func LoadConfig() *Config {
 
 	var baseURl string
 	if env == "production" {
-		baseURl = "https://computing.president.ac.id"
+		baseURl = "https://compsci.president.ac.id"
 	} else if env == "staging" {
 		baseURl = "http://localhost:3000"
 	} else {

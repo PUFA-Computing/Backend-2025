@@ -9,6 +9,4 @@ INSERT INTO organizations (name)
 VALUES
     ('PUFA Computing'),
     ('PUMA IT'),
-    ('PUMA IS'),
-    ('PUMA ID'),
-    ('PUMA VCD');
+    ('PUMA IS');
