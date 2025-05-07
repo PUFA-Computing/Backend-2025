@@ -54,9 +54,13 @@ func LoadConfig() *Config {
 	env := os.Getenv("ENV")
 
 	var baseURl string
+<<<<<<< HEAD
 	if env == "production" {
 		baseURl = "https://compsci.president.ac.id"
 	} else if env == "staging" {
+=======
+	if env == "local" || env == "test" {
+>>>>>>> 6d28e549bd0c6115e365a5402caec0ff3f844d69
 		baseURl = "http://localhost:3000"
 	} else {
 		// Default to production URL if ENV is not explicitly set to local/test
