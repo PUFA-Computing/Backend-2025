@@ -20,11 +20,11 @@ import (
 type Handlers struct {
 	AuthService       *services.AuthService
 	PermissionService *services.PermissionService
-	EmailService      *services.TestMailService
+	EmailService      services.EmailService
 	UserService       *services.UserService
 }
 
-func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService, EmailService *services.TestMailService, userService *services.UserService) *Handlers {
+func NewAuthHandlers(authService *services.AuthService, permissionService *services.PermissionService, EmailService services.EmailService, userService *services.UserService) *Handlers {
 	return &Handlers{
 		AuthService:       authService,
 		PermissionService: permissionService,

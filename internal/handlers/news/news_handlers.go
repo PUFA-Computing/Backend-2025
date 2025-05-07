@@ -164,74 +164,104 @@ func (h *Handler) EditNews(c *gin.Context) {
 		return
 	}
 
-	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	data := c.Request.FormValue("data")
-	var updatedNews models.News
-	if err := json.Unmarshal([]byte(data), &updatedNews); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	file, _, err := c.Request.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	optimizedImageBytes, err := io.ReadAll(optimizedImage)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	// Choose storage service to upload image to (AWS or R2)
-	upload := utils.ChooseStorageService()
-
-	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		updatedNews.Thumbnail, _ = h.R2Service.GetFileR2("news", updatedNews.Slug)
-	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		updatedNews.Thumbnail, _ = h.AWSService.GetFileAWS("news", updatedNews.Slug)
-	}
-
 	existingNews, err := h.NewsService.GetNewsByID(newsID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"success": false, "message": []string{"News not found"}})
 		return
 	}
 
-	if updatedNews.Title == "" {
-		updatedNews.Slug = utils.GenerateFriendlyURL(updatedNews.Title)
-	} else {
-		updatedNews.Slug = existingNews.Slug
+	// Parse form data
+	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
+		log.Printf("Error parsing multipart form: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
 
+	// Get the updated news data
+	data := c.Request.FormValue("data")
+	if data == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"No data provided"}})
+		return
+	}
+
+	log.Printf("Received data: %s", data)
+
+	var updatedNews models.News
+	if err := json.Unmarshal([]byte(data), &updatedNews); err != nil {
+		log.Printf("Error unmarshaling JSON: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	// Handle slug generation
+	if updatedNews.Title != "" && updatedNews.Title != existingNews.Title {
+		updatedNews.Slug = utils.GenerateFriendlyURL(updatedNews.Title)
+		log.Printf("Generated new slug: %s", updatedNews.Slug)
+	} else {
+		updatedNews.Slug = existingNews.Slug
+		log.Printf("Using existing slug: %s", updatedNews.Slug)
+	}
+
+	// Check if a new file is being uploaded
+	file, fileHeader, err := c.Request.FormFile("file")
+	hasNewImage := err == nil && fileHeader != nil
+
+	log.Printf("Has new image: %v", hasNewImage)
+
+	// Only process image if a new one is provided
+	if hasNewImage {
+		log.Printf("Processing new image")
+		defer file.Close()
+
+		optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
+		if err != nil {
+			log.Printf("Error optimizing image: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		optimizedImageBytes, err := io.ReadAll(optimizedImage)
+		if err != nil {
+			log.Printf("Error reading optimized image: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		// Upload image to R2 storage with the correct slug
+		log.Printf("Uploading image to R2 with slug: %s", updatedNews.Slug)
+		err = h.R2Service.UploadFileToR2(context.Background(), "news", updatedNews.Slug, optimizedImageBytes)
+		if err != nil {
+			log.Printf("Error uploading to R2: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		// Get the correct URL from R2 service
+		thumbnailURL, err := h.R2Service.GetFileR2("news", updatedNews.Slug)
+		if err != nil {
+			log.Printf("Error getting thumbnail URL: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{"Failed to get thumbnail URL: " + err.Error()}})
+			return
+		}
+
+		log.Printf("Setting thumbnail URL: %s", thumbnailURL)
+		updatedNews.Thumbnail = thumbnailURL
+	} else {
+		// No new image, keep the existing thumbnail
+		log.Printf("No new image provided, keeping existing thumbnail: %s", existingNews.Thumbnail)
+		updatedNews.Thumbnail = existingNews.Thumbnail
+	}
+
+	// Update the news in the database
 	utils.ReflectiveUpdate(existingNews, &updatedNews)
 
 	if err := h.NewsService.EditNews(newsID, &updatedNews); err != nil {
+		log.Printf("Error updating news in database: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
+
+	log.Printf("News updated successfully with ID: %d", newsID)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "News Updated Successfully",

@@ -29,11 +29,20 @@ type Config struct {
 	S3UsePathStyle     bool
 	S3Bucket           string
 
+	// Email service toggle
+	UseSmtp bool
+
+	// Legacy SMTP settings
 	SMTPHost     string
 	SMTPPort     string
 	SMTPUsername string
 	SMTPPassword string
 	SenderEmail  string
+
+	// SendGrid settings
+	SendGridAPIKey     string
+	SendGridSender     string
+	SendGridSenderName string
 
 	GithubAccessToken string
 	HunterApiKey      string
@@ -50,7 +59,8 @@ func LoadConfig() *Config {
 	} else if env == "staging" {
 		baseURl = "http://localhost:3000"
 	} else {
-		baseURl = "http://localhost:3000"
+		// Default to production URL if ENV is not explicitly set to local/test
+		baseURl = "https://compsci.president.ac.id"
 	}
 
 	cfg := &Config{
@@ -72,11 +82,18 @@ func LoadConfig() *Config {
 		AWSSecretAccessKey:    os.Getenv("AWS_SECRET_ACCESS_KEY"),
 		AWSRegion:             os.Getenv("AWS_REGION"),
 		S3Bucket:              os.Getenv("S3_BUCKET"),
-		SMTPHost:              os.Getenv("SMTP_HOST"),
-		SMTPPort:              os.Getenv("SMTP_PORT"),
-		SMTPUsername:          os.Getenv("SMTP_USERNAME"),
-		SMTPPassword:          os.Getenv("SMTP_PASSWORD"),
-		SenderEmail:           os.Getenv("SENDER_EMAIL"),
+		// Email service toggle
+		UseSmtp: 			   os.Getenv("USE_SMTP") == "true",
+		// Legacy SMTP settings
+		SMTPHost:      		   os.Getenv("SMTP_HOST"),
+		SMTPPort:      		   os.Getenv("SMTP_PORT"),
+		SMTPUsername:  		   os.Getenv("SMTP_USERNAME"),
+		SMTPPassword:  		   os.Getenv("SMTP_PASSWORD"),
+		SenderEmail:   		   os.Getenv("SMTP_SENDER_EMAIL"),
+		// SendGrid settings
+		SendGridAPIKey:        os.Getenv("SENDGRID_API_KEY"),
+		SendGridSender:        os.Getenv("SENDGRID_SENDER_EMAIL"),
+		SendGridSenderName:    os.Getenv("SENDGRID_SENDER_NAME"),
 		BaseURL:               baseURl,
 		GithubAccessToken:     os.Getenv("GH_ACCESS_TOKEN"),
 		HunterApiKey:          os.Getenv("HUNTER_API_KEY"),

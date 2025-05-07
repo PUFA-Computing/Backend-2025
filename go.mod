@@ -19,6 +19,7 @@ require (
 	github.com/mailgun/mailgun-go/v4 v4.12.0
 	github.com/pquerna/otp v1.4.0
 	github.com/redis/go-redis/v9 v9.3.0
+	github.com/sendgrid/sendgrid-go v3.14.0+incompatible
 	golang.org/x/crypto v0.23.0
 )
 
@@ -67,6 +68,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
+	github.com/sendgrid/rest v2.6.9+incompatible // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	go.uber.org/atomic v1.11.0 // indirect

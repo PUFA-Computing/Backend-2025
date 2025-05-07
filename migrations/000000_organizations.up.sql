@@ -7,6 +7,6 @@ CREATE TABLE IF NOT EXISTS organizations (
 
 INSERT INTO organizations (name)
 VALUES
-    ('PUFA Computing'),
+    ('PUFA Computer Science'),
     ('PUMA IT'),
     ('PUMA IS');

@@ -10,7 +10,7 @@ INSERT INTO roles (name)
 VALUES
     ('admin'),
     ('computizen'),
-    ('PUFA Computing'),
+    ('PUFA Computer Science'),
     ('PUMA IT'),
     ('PUMA IS'),
     ('guest');

@@ -4,6 +4,8 @@ import (
 	"Backend/configs"
 	"bytes"
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -55,6 +57,10 @@ func NewAWSService() (*S3Service, error) {
 func NewR2Service() (*S3Service, error) {
 	s3Config := configs.LoadConfig()
 	var bucket = s3Config.S3Bucket
+	// Set a default bucket name if it's empty
+	if bucket == "" {
+		bucket = "pufa-2025"
+	}
 	var accessKey = s3Config.CloudflareR2AccessId
 	var secretKey = s3Config.CloudflareR2AccessKey
 	var url = "https://" + s3Config.CloudflareAccountId + ".r2.cloudflarestorage.com/"
@@ -74,7 +80,10 @@ func NewR2Service() (*S3Service, error) {
 		return nil, err
 	}
 
-	s3Client := s3.NewFromConfig(cfg)
+	// Use path style addressing to avoid bucket name validation issues
+	s3Client := s3.NewFromConfig(cfg, func(o *s3.Options) {
+		o.UsePathStyle = true
+	})
 
 	return &S3Service{
 		s3Client: s3Client,
@@ -101,19 +110,27 @@ func (s *S3Service) UploadFileToAWS(ctx context.Context, directory, key string, 
 }
 
 func (s *S3Service) UploadFileToR2(ctx context.Context, directory, key string, file []byte) error {
+	// Format the key as directory/key.jpg
 	key = directory + "/" + key + ".jpg"
+	
+	// Log the bucket and key for debugging
+	fmt.Printf("Uploading to R2 - Bucket: %s, Key: %s\n", s.bucket, key)
+	
 	input := &s3.PutObjectInput{
-		Bucket:      aws.String(s.bucket), // Include the bucket name here
+		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(key),
 		Body:        bytes.NewReader(file),
 		ContentType: aws.String("image/jpeg"),
+		// Public read access is handled by bucket policy in Cloudflare R2
 	}
 
 	_, err := s.s3Client.PutObject(ctx, input)
 	if err != nil {
+		fmt.Printf("Error uploading to R2: %v\n", err)
 		return err
 	}
 
+	fmt.Printf("Successfully uploaded to R2 - Bucket: %s, Key: %s\n", s.bucket, key)
 	return nil
 }
 
@@ -155,6 +172,19 @@ func (s *S3Service) GetFileAWS(directory, slug string) (string, error) {
 }
 
 func (s *S3Service) GetFileR2(directory, slug string) (string, error) {
-	key := directory + "%2F" + slug + ".jpg"
-	return "https://sg.pufacomputing.live/" + key, nil
+	// Format the key as it's stored in R2
+	key := directory + "/" + slug + ".jpg"
+	
+	// For Cloudflare R2 with custom domain
+	// Add debugging to see what URL is being generated
+	fmt.Printf("Generating R2 URL for key: %s\n", key)
+	
+	// Add a timestamp to prevent browser caching
+	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
+	
+	// Use the public URL format that works with your Cloudflare R2 setup
+	// Add a cache-busting parameter to force browser to reload the image
+	url := fmt.Sprintf("https://pufacompsci.my.id/%s?t=%d", key, timestamp)
+	fmt.Printf("Generated URL with cache-busting: %s\n", url)
+	return url, nil
 }

@@ -89,27 +89,14 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 		return
 	}
 
-	// Choose storage service to upload image to (AWS or R2)
-	upload := utils.ChooseStorageService()
-
-	// Upload image to storage service
-	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		newEvent.Thumbnail, _ = h.R2Service.GetFileR2("event", newEvent.Slug)
-	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		newEvent.Thumbnail, _ = h.AWSService.GetFileAWS("event", newEvent.Slug)
+	// Upload image to R2 storage
+	err = h.R2Service.UploadFileToR2(context.Background(), "event", newEvent.Slug, optimizedImageBytes)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+		return
 	}
+
+	newEvent.Thumbnail, _ = h.R2Service.GetFileR2("event", newEvent.Slug)
 
 	if err := h.EventService.CreateEvent(&newEvent); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
@@ -129,11 +116,14 @@ func (h *Handlers) CreateEvent(c *gin.Context) {
 }
 
 func (h *Handlers) EditEvent(c *gin.Context) {
+	log.Println("=== EditEvent handler started ===")
 	userID, err := (&auth.Handlers{}).ExtractUserIDAndCheckPermission(c, "events:edit")
 	if err != nil {
+		log.Println("Auth error:", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
+	log.Println("User authenticated:", userID)
 
 	eventIDStr := c.Param("eventID")
 	eventID, err := strconv.Atoi(eventIDStr)
@@ -142,73 +132,95 @@ func (h *Handlers) EditEvent(c *gin.Context) {
 		return
 	}
 
-	if err := c.Request.ParseMultipartForm(10 << 20); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	data := c.Request.FormValue("data")
-	var updatedEvent models.Event
-	if err := json.Unmarshal([]byte(data), &updatedEvent); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	if updatedEvent.StartDate.After(updatedEvent.EndDate) {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Start Date cannot be after End Date"}})
-		return
-	}
-
-	file, _, err := c.Request.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	optimizedImageBytes, err := io.ReadAll(optimizedImage)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-		return
-	}
-
-	// Choose storage service to upload image
-	upload := utils.ChooseStorageService()
-
-	// Upload image to storage service
-	if upload == utils.R2Service {
-		err = h.R2Service.UploadFileToR2(context.Background(), "event", updatedEvent.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		updatedEvent.Thumbnail, _ = h.R2Service.GetFileR2("event", updatedEvent.Slug)
-	} else {
-		err = h.AWSService.UploadFileToAWS(context.Background(), "event", updatedEvent.Slug, optimizedImageBytes)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
-			return
-		}
-
-		updatedEvent.Thumbnail, _ = h.AWSService.GetFileAWS("event", updatedEvent.Slug)
-	}
-
+	// Get existing event first
 	existingEvent, err := h.EventService.GetEventByID(eventID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
 		return
 	}
 
+	// Parse form data - don't return error if no multipart form
+	err = c.Request.ParseMultipartForm(10 << 20)
+	if err != nil {
+		log.Println("Warning: Could not parse multipart form, continuing with regular form data:", err)
+		// Continue anyway, as we might just have JSON data without a file
+	}
+
+	data := c.Request.FormValue("data")
+	if data == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"No event data provided"}})
+		return
+	}
+
+	var updatedEvent models.Event
+	if err := json.Unmarshal([]byte(data), &updatedEvent); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{err.Error()}})
+		return
+	}
+
+	log.Println("Received updated event data:", updatedEvent)
+
+	if updatedEvent.StartDate.After(updatedEvent.EndDate) {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": []string{"Start Date cannot be after End Date"}})
+		return
+	}
+
+	// Set slug based on title change
 	if updatedEvent.Title != "" && updatedEvent.Title != existingEvent.Title {
 		updatedEvent.Slug = utils.GenerateFriendlyURL(updatedEvent.Title)
 	} else {
 		updatedEvent.Slug = existingEvent.Slug
+	}
+
+	// Try to get file from form, but don't require it
+	file, fileHeader, err := c.Request.FormFile("file")
+	
+	// Check if a valid file was uploaded
+	if err == nil && fileHeader != nil && fileHeader.Size > 0 && fileHeader.Filename != "empty.txt" {
+		// File was uploaded, process it
+		log.Println("File uploaded, processing image:", fileHeader.Filename, fileHeader.Size, "bytes")
+		optimizedImage, err := utils.OptimizeImage(file, 2800, 1080)
+		if err != nil {
+			log.Println("Error optimizing image:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		optimizedImageBytes, err := io.ReadAll(optimizedImage)
+		if err != nil {
+			log.Println("Error reading optimized image:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		// Make sure we have a valid slug for the file name
+		if updatedEvent.Slug == "" {
+			updatedEvent.Slug = existingEvent.Slug
+		}
+		
+		// Upload new image
+		log.Println("Uploading image to R2 with slug:", updatedEvent.Slug)
+		err = h.R2Service.UploadFileToR2(context.Background(), "event", updatedEvent.Slug, optimizedImageBytes)
+		if err != nil {
+			log.Println("Error uploading to R2:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+
+		// Update thumbnail URL
+		thumbnailURL, err := h.R2Service.GetFileR2("event", updatedEvent.Slug)
+		if err != nil {
+			log.Println("Error getting R2 URL:", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": []string{err.Error()}})
+			return
+		}
+		
+		log.Println("New thumbnail URL:", thumbnailURL)
+		updatedEvent.Thumbnail = thumbnailURL
+	} else {
+		// No file uploaded or empty file, keep existing thumbnail
+		log.Println("No valid file uploaded, keeping existing thumbnail. Error:", err)
+		updatedEvent.Thumbnail = existingEvent.Thumbnail
 	}
 
 	utils.ReflectiveUpdate(existingEvent, updatedEvent)
