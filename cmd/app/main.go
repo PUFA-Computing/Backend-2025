@@ -36,7 +36,7 @@ func main() {
 	r := api.SetupRoutes()
 
 	// port 8080
-	port := ":8080"
+	port := "0.0.0.0:8080"
 	if err := r.Run(port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 	}
