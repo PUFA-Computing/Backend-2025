@@ -53,17 +53,18 @@ type Config struct {
 func LoadConfig() *Config {
     env := os.Getenv("ENV")
 
-    var baseURl string
-    if env == "production" {
-        baseURl = "https://compsci.president.ac.id"
-    } else if env == "staging" {
-        baseURl = "https://staging.compsci.president.ac.id"
-    } else if env == "local" || env == "test" {
-        baseURl = "http://localhost:3000"
-    } else {
-        // Default to production URL if ENV is not explicitly set to local/test
-        baseURl = "https://compsci.president.ac.id"
-    }
+	var baseURl string
+
+	if env == "production" {
+		baseURl = "https://compsci.president.ac.id"
+	} else if env == "staging" {
+		baseURl = "https://staging.compsci.president.ac.id"
+	} else if env == "local" || env == "test" {
+		baseURl = "http://localhost:3000"
+	} else {
+		// Default to production URL if ENV is not explicitly set to local/test
+		baseURl = "https://compsci.president.ac.id"
+	}
 
     cfg := &Config{
         DBHost:                os.Getenv("DB_HOST"),

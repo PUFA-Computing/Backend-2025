@@ -12,37 +12,58 @@ import (
 	"Backend/internal/handlers/version"
 	"Backend/internal/middleware"
 	"Backend/internal/services"
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"log"
 	"time"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func SetupRoutes() *gin.Engine {
+	// Set Gin to release mode for better performance
 	gin.SetMode(gin.ReleaseMode)
-	r := gin.New()
-	r.Use(gin.Recovery())
-	r.Use(gin.Logger())
 	
+	// Create a new engine with default configuration
+	r := gin.New()
+	
+	// Add recovery middleware to recover from panics
+	r.Use(gin.Recovery())
+	
+	// Use custom logger for better performance under high load
+	r.Use(gin.LoggerWithConfig(gin.LoggerConfig{
+		SkipPaths: []string{"/public", "/api/v1/health"}, // Skip logging for static files and health checks
+	}))
+
 	// Set maximum multipart memory limit to 10MB
 	r.MaxMultipartMemory = 10 << 20 // 10 MB
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{
-		        "https://compsci.president.ac.id",
-		        "https://staging.compsci.president.ac.id",
-        		"http://localhost:3000",
-    		},
+			"https://computing.president.ac.id", 
+			"https://staging.computing.president.ac.id", 
+			"https://compsci.president.ac.id", 
+			"https://staging.compsci.president.ac.id", 
+			"http://localhost:3000",
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"},
 		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
 		AllowCredentials: true,
-		MaxAge:          12 * time.Hour,
+		MaxAge:           12 * time.Hour,
 	}))
 
-	maxTokens := 1000
+	// Increase rate limits for high traffic
+	maxTokens := 2000 // Doubled from 1000 to handle 100+ concurrent users
 	refillInterval := time.Minute
 	r.Use(middleware.RateLimiterMiddleware(maxTokens, refillInterval, "general"))
+	
+	// Add a health check endpoint that bypasses rate limiting
+	r.GET("/api/v1/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "ok",
+			"timestamp": time.Now().Format(time.RFC3339),
+		})
+	})
 
 	r.Static("/public", "./public")
 
@@ -57,10 +78,10 @@ func SetupRoutes() *gin.Engine {
 	R2Service, _ := services.NewR2Service()
 	// Get email service configuration
 	config := configs.LoadConfig()
-	
+
 	// Initialize email service based on configuration
 	var EmailService services.EmailService
-	
+
 	// Check if we should use SMTP or SendGrid
 	if config.UseSmtp {
 		// Use SMTP service
@@ -69,28 +90,28 @@ func SetupRoutes() *gin.Engine {
 			smtpHost = "smtp.gmail.com"
 			log.Println("Using fallback SMTP host: smtp.gmail.com")
 		}
-		
+
 		smtpPort := config.SMTPPort
 		if smtpPort == "" {
 			smtpPort = "587"
 			log.Println("Using fallback SMTP port: 587")
 		}
-		
+
 		smtpUsername := config.SMTPUsername
 		if smtpUsername == "" {
 			log.Println("WARNING: SMTP username not found in environment variables")
 		}
-		
+
 		smtpPassword := config.SMTPPassword
 		if smtpPassword == "" {
 			log.Println("WARNING: SMTP password not found in environment variables")
 		}
-		
+
 		senderEmail := config.SenderEmail
 		if senderEmail == "" {
 			log.Println("WARNING: SMTP sender email not found in environment variables")
 		}
-		
+
 		EmailService = services.NewTestMailService(
 			smtpHost,
 			smtpPort,
@@ -105,20 +126,20 @@ func SetupRoutes() *gin.Engine {
 		if sendGridAPIKey == "" {
 			log.Println("WARNING: SendGrid API key not found in environment variables")
 		}
-		
+
 		sendGridSender := config.SendGridSender
 		if sendGridSender == "" {
 			// Fallback to legacy sender email if available
 			sendGridSender = config.SenderEmail
 			log.Println("Using legacy sender email for SendGrid")
 		}
-		
+
 		sendGridSenderName := config.SendGridSenderName
 		if sendGridSenderName == "" {
 			sendGridSenderName = "PUFA Computer Science"
 			log.Println("Using default sender name: PUFA Computer Science")
 		}
-		
+
 		EmailService = services.NewSendGridService(
 			sendGridAPIKey,
 			sendGridSender,
@@ -148,7 +169,7 @@ func SetupRoutes() *gin.Engine {
 	authRoutes := api.Group("/auth")
 	{
 		authRoutes.POST("/register", authHandlers.RegisterUser)
-		authRoutes.POST("/login", middleware.RateLimiterMiddleware(5, time.Minute, "login"), authHandlers.Login)
+		authRoutes.POST("/login", middleware.RateLimiterMiddleware(100, time.Minute, "login"), authHandlers.Login)
 		authRoutes.POST("/logout", authHandlers.Logout)
 		authRoutes.POST("/refresh-token", middleware.TokenMiddleware(), authHandlers.RefreshToken)
 		authRoutes.GET("/verify-email", authHandlers.VerifyEmail)
@@ -178,7 +199,7 @@ func SetupRoutes() *gin.Engine {
 	adminRoutes := api.Group("/admin")
 	{
 		adminRoutes.Use(middleware.TokenMiddleware())
-		adminRoutes.GET("/users", userHandlers.ListUsers) // original endpoint for admin to list all users
+		adminRoutes.GET("/users", userHandlers.ListUsers)              // original endpoint for admin to list all users
 		adminRoutes.GET("/users/basic", userHandlers.GetAllUsersBasic) // new endpoint that avoids NULL issues
 	}
 
