@@ -36,9 +36,26 @@ func CloseAspirationByID(id int) error {
 }
 
 func DeleteAspirationByID(id int) error {
-	_, err := database.DB.Exec(context.Background(), `
+	tx, err := database.DB.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+	
+	_, err = tx.Exec(context.Background(), `
+		DELETE FROM aspirations_upvote WHERE aspiration_id = $1`, id)
+	if err != nil {
+		tx.Rollback(context.Background())
+		return err
+	}
+	
+	_, err = tx.Exec(context.Background(), `
 		DELETE FROM aspirations WHERE id = $1`, id)
-	return err
+	if err != nil {
+		tx.Rollback(context.Background())
+		return err
+	}
+	
+	return tx.Commit(context.Background())
 }
 
 func GetAspirations(queryParams map[string]string) ([]models.Aspiration, error) {
